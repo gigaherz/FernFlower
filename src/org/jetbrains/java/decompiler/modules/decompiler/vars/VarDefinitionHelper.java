@@ -452,7 +452,9 @@ public class VarDefinitionHelper {
     for (Entry<VarVersionPair, VarInfo> e : types.entrySet()) {
       typeNames.put(e.getKey(), e.getValue().typeName());
     }
-    final StructMethod current_meth = (StructMethod)DecompilerContext.getProperty(DecompilerContext.CURRENT_METHOD);
+
+    final VarProcessor vp = (VarProcessor) DecompilerContext.getProperty(DecompilerContext.CURRENT_VAR_PROCESSOR);
+    final StructMethod current_meth = vp.method;
     Map<VarVersionPair, String> renames = current_meth.getRenamer().rename(typeNames);
 
     // Stuff the parent context into enclosed child methods

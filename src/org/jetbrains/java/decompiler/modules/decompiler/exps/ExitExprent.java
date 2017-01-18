@@ -23,6 +23,7 @@ import org.jetbrains.java.decompiler.main.collectors.BytecodeMappingTracer;
 import org.jetbrains.java.decompiler.main.rels.MethodWrapper;
 import org.jetbrains.java.decompiler.modules.decompiler.ExprProcessor;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.CheckTypesResult;
+import org.jetbrains.java.decompiler.modules.decompiler.vars.VarProcessor;
 import org.jetbrains.java.decompiler.struct.attr.StructExceptionsAttribute;
 import org.jetbrains.java.decompiler.struct.gen.MethodDescriptor;
 import org.jetbrains.java.decompiler.struct.gen.VarType;
@@ -81,7 +82,8 @@ public class ExitExprent extends Exprent {
   @Override
   public TextBuffer toJava(int indent, BytecodeMappingTracer tracer) {
     tracer.addMapping(bytecode);
-    MethodDescriptor md = (MethodDescriptor) DecompilerContext.getProperty(DecompilerContext.CURRENT_METHOD_DESCRIPTOR);
+    VarProcessor vp = (VarProcessor) DecompilerContext.getProperty(DecompilerContext.CURRENT_VAR_PROCESSOR);
+    MethodDescriptor md = vp.methodDescriptor;
 
     if (exitType == EXIT_RETURN) {
       TextBuffer buffer = new TextBuffer("return");

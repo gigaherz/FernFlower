@@ -27,8 +27,8 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class VarProcessor {
-  private final StructMethod method;
-  private final MethodDescriptor methodDescriptor;
+  public final StructMethod method;
+  public final MethodDescriptor methodDescriptor;
   private Map<VarVersionPair, String> mapVarNames = new HashMap<>();
   private Map<VarVersionPair, LocalVariable> mapVarLVTs = new HashMap<VarVersionPair, LocalVariable>();
   private VarVersionsProcessor varVersions;
