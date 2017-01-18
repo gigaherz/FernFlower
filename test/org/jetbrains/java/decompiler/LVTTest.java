@@ -16,6 +16,7 @@
 package org.jetbrains.java.decompiler;
 
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -23,22 +24,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class LVTTest extends SingleClassesTestBase {
-  @Override
-  protected Map<String, Object> getDecompilerOptions() {
-    return new HashMap<String, Object>() {{
-      put(IFernflowerPreferences.DECOMPILE_INNER,"1");
-      put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES,"1");
-      put(IFernflowerPreferences.ASCII_STRING_CHARACTERS,"1");
-      put(IFernflowerPreferences.LOG_LEVEL, "TRACE");
-      put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
-      put(IFernflowerPreferences.REMOVE_BRIDGE, "1");
-      put(IFernflowerPreferences.INCLUDE_ENTIRE_CLASSPATH, "1");
-    }};
-  }
 
-  @Override
+
+  @Before
     public void setUp() throws IOException {
-        super.setUp();
+        fixture = new DecompilerTestFixture();
+        fixture.setUp(
+            IFernflowerPreferences.DECOMPILE_INNER,"1",
+            IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES,"1",
+            IFernflowerPreferences.ASCII_STRING_CHARACTERS,"1",
+            IFernflowerPreferences.LOG_LEVEL, "TRACE",
+            IFernflowerPreferences.REMOVE_SYNTHETIC, "1",
+            IFernflowerPreferences.REMOVE_BRIDGE, "1",
+            IFernflowerPreferences.INCLUDE_ENTIRE_CLASSPATH, "1");
         fixture.cleanup = false;
     }
 //  @Test public void testMatch1() { doTest("pkg/TestPPMM"); }

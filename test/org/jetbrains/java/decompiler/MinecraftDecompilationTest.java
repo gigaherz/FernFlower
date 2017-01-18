@@ -41,13 +41,11 @@ public class MinecraftDecompilationTest {
   public void setUp() throws IOException {
     fixture = new DecompilerTestFixture();
     // -din=1 -rbr=0 -dgs=1 -asc=1 -rsy=0
-    Map<String,Object> mcFFOptions = new HashMap<String,Object>() {{
-        put(IFernflowerPreferences.DECOMPILE_INNER,"1");
-        put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES,"1");
-        put(IFernflowerPreferences.ASCII_STRING_CHARACTERS,"1");
-        put(IFernflowerPreferences.INCLUDE_ENTIRE_CLASSPATH, "1");
-    }};
-    fixture.setUp(mcFFOptions);
+    fixture.setUp(
+        IFernflowerPreferences.DECOMPILE_INNER,"1",
+        IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES,"1",
+        IFernflowerPreferences.ASCII_STRING_CHARACTERS,"1",
+        IFernflowerPreferences.INCLUDE_ENTIRE_CLASSPATH, "1");
     if (!new File(fixture.getTestDataDir(), MC_JAR).exists()) {
         throw new RuntimeException("Missing "+MC_JAR+" in testData dir - aborting");
     }
