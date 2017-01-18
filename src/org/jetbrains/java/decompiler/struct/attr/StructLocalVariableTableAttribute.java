@@ -92,7 +92,7 @@ public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
 
   private Stream<LocalVariable> matchingVars(int index, int visibleOffset) {
     return localVariables.stream()
-      .filter(v -> v.index == index && (visibleOffset >= v.start_pc && visibleOffset < v.start_pc + v.length));
+      .filter(v -> v.index == index && (visibleOffset == -1 || (visibleOffset >= v.start_pc && visibleOffset < v.start_pc + v.length)));
   }
 
   public boolean containsName(String name) {

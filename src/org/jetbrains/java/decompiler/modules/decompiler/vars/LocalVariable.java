@@ -27,16 +27,6 @@ public class LocalVariable implements Comparable<LocalVariable> {
   public final int length;
   final String descriptor;
 
-  public LocalVariable(int start_pc, int length, String name, String descriptor, int index) {
-    this.start_pc = start_pc;
-    this.length = length;
-    this.end = start_pc+length;
-    this.name = name;
-    this.descriptor = descriptor;
-    this.index = index;
-    this.isLVTT = true;
-  }
-
   public LocalVariable(String name, String desc, int start, int end, int index, boolean isLVTT) {
     this.name = name;
     this.descriptor = desc;

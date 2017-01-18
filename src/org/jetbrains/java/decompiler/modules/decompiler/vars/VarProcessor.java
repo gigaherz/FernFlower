@@ -80,7 +80,7 @@ public class VarProcessor {
     for (Entry<Integer, VarVersionPair> vvp : mapOriginalVarIndices.entrySet()) {
         SortedSet<VarVersionPair> set = indexedPairs.get(vvp.getValue().var);
         if (set == null) {
-            set = new TreeSet<VarVersionPair>(vvpVersionComparator);
+            set = new TreeSet<>(vvpVersionComparator);
             indexedPairs.put(vvp.getValue().var, set);
         }
         set.add(vvp.getValue());

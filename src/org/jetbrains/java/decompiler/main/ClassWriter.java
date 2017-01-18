@@ -650,6 +650,7 @@ public class ClassWriter {
         }
         md.addGenericDescriptor(descriptor);
       }
+
       boolean throwsExceptions = false;
       int paramCount = 0;
 
