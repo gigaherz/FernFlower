@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2015 JetBrains s.r.o.
+ * Copyright 2000-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,38 @@
  */
 package org.jetbrains.java.decompiler;
 
+import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.*;
 
-public class SingleClassesTest extends SingleClassesTestBase {
-  @Override
-  protected Map<String, Object> getDecompilerOptions() {
-    return new HashMap<String, Object>() {{
-      put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
-      put(IFernflowerPreferences.DUMP_ORIGINAL_LINES, "1");
-    }};
+import static org.jetbrains.java.decompiler.DecompilerTestFixture.assertFilesEqual;
+import static org.junit.Assert.assertTrue;
+
+public class SingleClassesTest {
+  private DecompilerTestFixture fixture;
+
+  @Before
+  public void setUp() throws IOException {
+    fixture = new DecompilerTestFixture();
+    fixture.setUp(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1",
+                  IFernflowerPreferences.DUMP_ORIGINAL_LINES, "1");
+  }
+
+  @After
+  public void tearDown() {
+    fixture.tearDown();
+    fixture = null;
   }
 
   @Test public void testClassFields() { doTest("pkg/TestClassFields"); }
+  @Test public void testInterfaceFields() { doTest("pkg/TestInterfaceFields"); }
   @Test public void testClassLambda() { doTest("pkg/TestClassLambda"); }
   @Test public void testClassLoop() { doTest("pkg/TestClassLoop"); }
   @Test public void testClassSwitch() { doTest("pkg/TestClassSwitch"); }
@@ -46,6 +62,7 @@ public class SingleClassesTest extends SingleClassesTestBase {
   @Test public void testEnum() { doTest("pkg/TestEnum"); }
   @Test public void testDebugSymbols() { doTest("pkg/TestDebugSymbols"); }
   @Test public void testInvalidMethodSignature() { doTest("InvalidMethodSignature"); }
+  @Test public void testAnonymousClassConstructor() { doTest("pkg/TestAnonymousClassConstructor"); }
   @Test public void testInnerClassConstructor() { doTest("pkg/TestInnerClassConstructor"); }
   @Test public void testInnerClassConstructor11() { doTest("v11/TestInnerClassConstructor"); }
   @Test public void testTryCatchFinally() { doTest("pkg/TestTryCatchFinally"); }
@@ -60,5 +77,65 @@ public class SingleClassesTest extends SingleClassesTestBase {
   @Test public void testInnerLocal() { doTest("pkg/TestInnerLocal"); }
   @Test public void testInnerLocalPkg() { doTest("pkg/TestInnerLocalPkg"); }
   @Test public void testInnerSignature() { doTest("pkg/TestInnerSignature"); }
+  @Test public void testAnonymousSignature() { doTest("pkg/TestAnonymousSignature"); }
+  @Test public void testLocalsSignature() { doTest("pkg/TestLocalsSignature"); }
   @Test public void testParameterizedTypes() { doTest("pkg/TestParameterizedTypes"); }
+  @Test public void testShadowing() { doTest("pkg/TestShadowing", "pkg/Shadow", "ext/Shadow"); }
+  @Test public void testStringConcat() { doTest("pkg/TestStringConcat"); }
+  @Test public void testJava9StringConcat() { doTest("java9/TestJava9StringConcat"); }
+  @Test public void testMethodReferenceSameName() { doTest("pkg/TestMethodReferenceSameName"); }
+  @Test public void testMethodReferenceLetterClass() { doTest("pkg/TestMethodReferenceLetterClass"); }
+  @Test public void testMemberAnnotations() { doTest("pkg/TestMemberAnnotations"); }
+  @Test public void testMoreAnnotations() { doTest("pkg/MoreAnnotations"); }
+  @Test public void testTypeAnnotations() { doTest("pkg/TypeAnnotations"); }
+  @Test public void testStaticNameClash() { doTest("pkg/TestStaticNameClash"); }
+  @Test public void testExtendingSubclass() { doTest("pkg/TestExtendingSubclass"); }
+  @Test public void testSyntheticAccess() { doTest("pkg/TestSyntheticAccess"); }
+  @Test public void testIllegalVarName() { doTest("pkg/TestIllegalVarName"); }
+  @Test public void testKotlinConstructor() { doTest("pkg/TestKotlinConstructorKt"); }
+  @Test public void testAsserts() { doTest("pkg/TestAsserts"); }
+  @Test public void testLocalsNames() { doTest("pkg/TestLocalsNames"); }
+  @Test public void testAnonymousParamNames() { doTest("pkg/TestAnonymousParamNames"); }
+  @Test public void testAnonymousParams() { doTest("pkg/TestAnonymousParams"); }
+
+  private void doTest(String testFile, String... companionFiles) {
+    ConsoleDecompiler decompiler = fixture.getDecompiler();
+
+    File classFile = new File(fixture.getTestDataDir(), "/classes/" + testFile + ".class");
+    assertTrue(classFile.isFile());
+    for (File file : collectClasses(classFile)) {
+      decompiler.addSpace(file, true);
+    }
+
+    for (String companionFile : companionFiles) {
+      File companionClassFile = new File(fixture.getTestDataDir(), "/classes/" + companionFile + ".class");
+      assertTrue(companionClassFile.isFile());
+      for (File file : collectClasses(companionClassFile)) {
+        decompiler.addSpace(file, true);
+      }
+    }
+
+    decompiler.decompileContext();
+
+    String testName = classFile.getName().substring(0, classFile.getName().length() - 6);
+    File decompiledFile = new File(fixture.getTargetDir(), testName + ".java");
+    assertTrue(decompiledFile.isFile());
+    File referenceFile = new File(fixture.getTestDataDir(), "results/" + testName + ".dec");
+    assertTrue(referenceFile.isFile());
+    assertFilesEqual(referenceFile, decompiledFile);
+  }
+
+  private static List<File> collectClasses(File classFile) {
+    List<File> files = new ArrayList<>();
+    files.add(classFile);
+
+    File parent = classFile.getParentFile();
+    if (parent != null) {
+      final String pattern = classFile.getName().replace(".class", "") + "\\$.+\\.class";
+      File[] inner = parent.listFiles((dir, name) -> name.matches(pattern));
+      if (inner != null) Collections.addAll(files, inner);
+    }
+
+    return files;
+  }
 }

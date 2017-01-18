@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2014 JetBrains s.r.o.
+ * Copyright 2000-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.jetbrains.java.decompiler.struct;
 import org.jetbrains.java.decompiler.code.CodeConstants;
 import org.jetbrains.java.decompiler.struct.attr.StructGeneralAttribute;
 import org.jetbrains.java.decompiler.struct.attr.StructLocalVariableTableAttribute;
+import org.jetbrains.java.decompiler.struct.attr.StructLocalVariableTypeTableAttribute;
 import org.jetbrains.java.decompiler.struct.consts.ConstantPool;
 import org.jetbrains.java.decompiler.util.DataInputFullStream;
 import org.jetbrains.java.decompiler.util.VBStyleCollection;
@@ -47,7 +48,7 @@ public class StructMember {
   }
 
   protected VBStyleCollection<StructGeneralAttribute, String> readAttributes(DataInputFullStream in, ConstantPool pool) throws IOException {
-    VBStyleCollection<StructGeneralAttribute, String> attributes = new VBStyleCollection<StructGeneralAttribute, String>();
+    VBStyleCollection<StructGeneralAttribute, String> attributes = new VBStyleCollection<>();
 
     int length = in.readUnsignedShort();
     for (int i = 0; i < length; i++) {
@@ -60,7 +61,12 @@ public class StructMember {
         if (StructGeneralAttribute.ATTRIBUTE_LOCAL_VARIABLE_TABLE.equals(name) && attributes.containsKey(name)) {
           // merge all variable tables
           StructLocalVariableTableAttribute table = (StructLocalVariableTableAttribute)attributes.getWithKey(name);
-          table.addLocalVariableTable((StructLocalVariableTableAttribute)attribute);
+          table.add((StructLocalVariableTableAttribute)attribute);
+        }
+        else if (StructGeneralAttribute.ATTRIBUTE_LOCAL_VARIABLE_TYPE_TABLE.equals(name) && attributes.containsKey(name)) {
+          // merge all variable tables
+          StructLocalVariableTypeTableAttribute table = (StructLocalVariableTypeTableAttribute)attributes.getWithKey(name);
+          table.add((StructLocalVariableTypeTableAttribute)attribute);
         }
         else {
           attributes.addWithKey(attribute, attribute.getName());
@@ -73,14 +79,12 @@ public class StructMember {
 
   protected StructGeneralAttribute readAttribute(DataInputFullStream in, ConstantPool pool, String name) throws IOException {
     StructGeneralAttribute attribute = StructGeneralAttribute.createAttribute(name);
+    int length = in.readInt();
     if (attribute == null) {
-      in.discard(in.readInt());
+      in.discard(length);
     }
     else {
-      byte[] data = new byte[in.readInt()];
-      in.readFull(data);
-      attribute.setInfo(data);
-      attribute.initContent(pool);
+      attribute.initContent(in, pool);
     }
     return attribute;
   }

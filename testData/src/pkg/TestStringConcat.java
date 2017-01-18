@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jetbrains.java.decompiler;
+package pkg;
 
-import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-public class LineNumbersMatchTest extends SingleClassesTestBase {
-  @Override
-  protected Map<String, Object> getDecompilerOptions() {
-    return new HashMap<String, Object>() {{
-      put(IFernflowerPreferences.USE_DEBUG_LINE_NUMBERS, "1");
-    }};
+public class TestStringConcat {
+  public String test1(String prefix, int a) {
+    return prefix + a;
   }
 
-  @Test public void testMatch1() { doTest("pkg/TestLineNumbersMatch"); }
+  public String test2(String var, int b, Object c) {
+    return "(" + var + "-" + b + "---" + c + ")";
+  }
 }
