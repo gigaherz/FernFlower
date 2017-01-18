@@ -43,15 +43,16 @@ public class VarProcessor {
   }
 
   public void setVarVersions(RootStatement root) {
+    VarVersionsProcessor oldProcessor = varVersions;
     Map<Integer, VarVersionPair> mapOriginalVarIndices = null;
     if (varVersions != null) {
         mapOriginalVarIndices = varVersions.getMapOriginalVarIndices();
     }
-    varVersions = new VarVersionsProcessor();
-    varVersions.setVarVersions(root);
+    varVersions = new VarVersionsProcessor(method, methodDescriptor);
+    varVersions.setVarVersions(root, oldProcessor);
     if (mapOriginalVarIndices != null) {
         varVersions.getMapOriginalVarIndices().putAll(mapOriginalVarIndices);
-  }
+    }
   }
 
   public void setVarDefinitions(Statement root) {
@@ -105,7 +106,7 @@ public class VarProcessor {
       }
 
       Integer counter = mapNames.get(name);
-      mapNames.put(name, counter == null ? counter = new Integer(0) : ++counter);
+      mapNames.put(name, counter == null ? counter = 0 : ++counter);
 
       if (counter > 0 && !lvtName) {
         name += String.valueOf(counter);
@@ -120,7 +121,7 @@ public class VarProcessor {
       return null;
     }
 
-    return varVersions.getMapOriginalVarIndices().get(index);
+    return varVersions.getMapOriginalVarIndices().get(index).var;
   }
 
   public void refreshVarNames(VarNamesCollector vc) {

@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class VarVersionsProcessor {
-
+  private final StructMethod method;
   private Map<Integer, VarVersionPair> mapOriginalVarIndices = new HashMap<Integer, VarVersionPair>();
   private VarTypeProcessor typeProcessor;
 
@@ -50,13 +50,13 @@ public class VarVersionsProcessor {
     FlattenStatementsHelper flattenHelper = new FlattenStatementsHelper();
     DirectGraph graph = flattenHelper.buildDirectGraph(root);
 
-    org.jetbrains.java.decompiler.util.DotExporter.toDotFile(graph, mt, "setVarVersions");
+    org.jetbrains.java.decompiler.util.DotExporter.toDotFile(graph, method, "setVarVersions");
 
     mergePhiVersions(ssa, graph);
 
     typeProcessor.calculateVarTypes(root, graph);
 
-//    simpleMerge(typeProcessor, graph, mt);
+    // simpleMerge(typeProcessor, graph, method);
 
     // FIXME: advanced merging
 
