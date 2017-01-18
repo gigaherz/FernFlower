@@ -81,7 +81,7 @@ public class StructGeneralAttribute {
     else if (ATTRIBUTE_RUNTIME_VISIBLE_TYPE_ANNOTATIONS.equals(name) || ATTRIBUTE_RUNTIME_INVISIBLE_TYPE_ANNOTATIONS.equals(name)) {
       attr = new StructTypeAnnotationAttribute();
     }
-    else if (ATTRIBUTE_LOCAL_VARIABLE_TABLE.equals(name)) {
+    else if (ATTRIBUTE_LOCAL_VARIABLE_TABLE.equals(name) || ATTRIBUTE_LOCAL_VARIABLE_TYPE_TABLE.equals(name)) {
       attr = new StructLocalVariableTableAttribute();
     }
     else if (ATTRIBUTE_LOCAL_VARIABLE_TYPE_TABLE.equals(name)) {

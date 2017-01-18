@@ -26,11 +26,18 @@ import org.jetbrains.java.decompiler.modules.decompiler.stats.Statement;
 import org.jetbrains.java.decompiler.modules.decompiler.stats.Statements;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarVersionPair;
 import org.jetbrains.java.decompiler.struct.StructClass;
+import org.jetbrains.java.decompiler.struct.StructContext;
 import org.jetbrains.java.decompiler.struct.StructField;
+import org.jetbrains.java.decompiler.struct.StructMethod;
+import org.jetbrains.java.decompiler.struct.gen.MethodDescriptor;
+import org.jetbrains.java.decompiler.struct.gen.VarType;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class InitializerProcessor {
   public static void extractInitializers(ClassWrapper wrapper) {
@@ -115,14 +122,13 @@ public class InitializerProcessor {
   private static void extractStaticInitializers(ClassWrapper wrapper, MethodWrapper method) {
     RootStatement root = method.root;
     StructClass cl = wrapper.getClassStruct();
-    Statement firstData = Statements.findFirstData(root);
-    if (firstData != null) {
-      boolean inlineInitializers = cl.hasModifier(CodeConstants.ACC_INTERFACE) || cl.hasModifier(CodeConstants.ACC_ENUM);
+    Set<String> whitelist = new HashSet<String>();
 
-      while (!firstData.getExprents().isEmpty()) {
-        Exprent exprent = firstData.getExprents().get(0);
-
-        boolean found = false;
+    Statement firstdata = findFirstData(root);
+    if (firstdata != null) {
+      Iterator<Exprent> itr = firstdata.getExprents().iterator();
+      while (itr.hasNext()) {
+        Exprent exprent = itr.next();
 
         if (exprent.type == Exprent.EXPRENT_ASSIGNMENT) {
           AssignmentExprent assignExpr = (AssignmentExprent)exprent;
@@ -131,21 +137,16 @@ public class InitializerProcessor {
             if (fExpr.isStatic() && fExpr.getClassname().equals(cl.qualifiedName) &&
                 cl.hasField(fExpr.getName(), fExpr.getDescriptor().descriptorString)) {
 
-              // interfaces fields should always be initialized inline
-              if (inlineInitializers || isExprentIndependent(assignExpr.getRight(), method)) {
-                String keyField = InterpreterUtil.makeUniqueKey(fExpr.getName(), fExpr.getDescriptor().descriptorString);
+              String keyField = InterpreterUtil.makeUniqueKey(fexpr.getName(), fexpr.getDescriptor().descriptorString);
+              if (isExprentIndependent(asexpr.getRight(), meth, cl, whitelist, cl.getFields().getIndexByKey(keyField))) {
                 if (!wrapper.getStaticFieldInitializers().containsKey(keyField)) {
-                  wrapper.getStaticFieldInitializers().addWithKey(assignExpr.getRight(), keyField);
-                  firstData.getExprents().remove(0);
-                  found = true;
+                  wrapper.getStaticFieldInitializers().addWithKey(asexpr.getRight(), keyField);
+                  whitelist.add(keyField);
+                  itr.remove();
                 }
               }
             }
           }
-        }
-
-        if (!found) {
-          break;
         }
       }
     }
@@ -182,6 +183,8 @@ public class InitializerProcessor {
       return;
     }
 
+    Set<String> whitelist = new HashSet<String>();
+
     while (true) {
       String fieldWithDescr = null;
       Exprent value = null;
@@ -204,8 +207,8 @@ public class InitializerProcessor {
             if (!fExpr.isStatic() && fExpr.getClassname().equals(cl.qualifiedName) &&
                 cl.hasField(fExpr.getName(), fExpr.getDescriptor().descriptorString)) { // check for the physical existence of the field. Could be defined in a superclass.
 
-              if (isExprentIndependent(assignExpr.getRight(), lstMethodWrappers.get(i))) {
-                String fieldKey = InterpreterUtil.makeUniqueKey(fExpr.getName(), fExpr.getDescriptor().descriptorString);
+              String fieldKey = InterpreterUtil.makeUniqueKey(fexpr.getName(), fexpr.getDescriptor().descriptorString);
+              if (isExprentIndependent(asexpr.getRight(), lstMethWrappers.get(i), cl, whitelist, cl.getFields().getIndexByKey(fieldKey))) {
                 if (fieldWithDescr == null) {
                   fieldWithDescr = fieldKey;
                   value = assignExpr.getRight();
@@ -240,7 +243,8 @@ public class InitializerProcessor {
     }
   }
 
-  private static boolean isExprentIndependent(Exprent exprent, MethodWrapper method) {
+  private static boolean isExprentIndependent(Exprent exprent, MethodWrapper meth, StructClass cl, Set<String> whitelist, int fidx) {
+
     List<Exprent> lst = exprent.getAllExprents(true);
     lst.add(exprent);
 
@@ -256,10 +260,88 @@ public class InitializerProcessor {
           }
           break;
         case Exprent.EXPRENT_FIELD:
-          return false;
+          FieldExprent fexpr = (FieldExprent)expr;
+          if (cl.qualifiedName.equals(fexpr.getClassname())) {
+            String key = InterpreterUtil.makeUniqueKey(fexpr.getName(), fexpr.getDescriptor().descriptorString);
+            if (!whitelist.contains(key)) {
+              return false;
+            }
+            return cl.getFields().getIndexByKey(key) < fidx;
+          }
+          else if (!fexpr.isStatic()) {
+            return false;
+          }
       }
     }
 
     return true;
+  }
+
+
+  private static Statement findFirstData(Statement stat) {
+
+    if (stat.getExprents() != null) {
+      return stat;
+    }
+    else {
+      if (stat.isLabeled()) { // FIXME: Why??
+        return null;
+      }
+
+      switch (stat.type) {
+        case Statement.TYPE_SEQUENCE:
+        case Statement.TYPE_IF:
+        case Statement.TYPE_ROOT:
+        case Statement.TYPE_SWITCH:
+        case Statement.TYPE_SYNCRONIZED:
+          return findFirstData(stat.getFirst());
+        default:
+          return null;
+      }
+    }
+  }
+
+  private static boolean isInvocationInitConstructor(InvocationExprent inv, MethodWrapper meth, ClassWrapper wrapper, boolean withThis) {
+
+    if (inv.getFunctype() == InvocationExprent.TYP_INIT) {
+      if (inv.getInstance().type == Exprent.EXPRENT_VAR) {
+        VarExprent instvar = (VarExprent)inv.getInstance();
+        VarVersionPair varpaar = new VarVersionPair(instvar);
+
+        String classname = meth.varproc.getThisVars().get(varpaar);
+
+        if (classname != null) { // any this instance. TODO: Restrict to current class?
+          if (withThis || !wrapper.getClassStruct().qualifiedName.equals(inv.getClassname())) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+
+  public static void hideInitalizers(ClassWrapper wrapper) {
+    // hide initializers with anon class arguments
+    for (MethodWrapper method : wrapper.getMethods()) {
+      StructMethod mt = method.methodStruct;
+      String name = mt.getName();
+      String desc = mt.getDescriptor();
+
+      if (mt.isSynthetic() && CodeConstants.INIT_NAME.equals(name)) {
+        MethodDescriptor md = MethodDescriptor.parseDescriptor(desc);
+        if (md.params.length > 0) {
+          VarType type = md.params[md.params.length - 1];
+          if (type.type == CodeConstants.TYPE_OBJECT) {
+            ClassNode node = DecompilerContext.getClassProcessor().getMapRootClasses().get(type.value);
+            if (node != null && (node.namelessConstructorStub || node.type == ClassNode.CLASS_ANONYMOUS || (node.access & CodeConstants.ACC_SYNTHETIC) != 0)) {
+              //TODO: Verify that the body is JUST a this([args]) call?
+              wrapper.getHiddenMembers().add(InterpreterUtil.makeUniqueKey(name, desc));
+            }
+          }
+        }
+      }
+    }
   }
 }

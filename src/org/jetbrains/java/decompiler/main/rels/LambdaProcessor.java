@@ -121,6 +121,7 @@ public class LambdaProcessor {
             }
           }
         }
+        Collections.sort(node.nested);
       }
 
       mt.releaseResources();
@@ -135,6 +136,7 @@ public class LambdaProcessor {
 
           parent_class.nested.add(nd);
           nd.parent = parent_class;
+          Collections.sort(parent_class.nested);
         }
       }
     }

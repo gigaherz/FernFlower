@@ -27,10 +27,10 @@ public class DominatorTreeExceptionFilter {
   private final Statement statement;
 
   // idom, nodes
-  private final Map<Integer, Set<Integer>> mapTreeBranches = new HashMap<>();
+  private final Map<Integer, Set<Integer>> mapTreeBranches = new LinkedHashMap<Integer, Set<Integer>>();
 
   // handler, range nodes
-  private final Map<Integer, Set<Integer>> mapExceptionRanges = new HashMap<>();
+  private final Map<Integer, Set<Integer>> mapExceptionRanges = new LinkedHashMap<Integer, Set<Integer>>();
 
   // handler, head dom
   private Map<Integer, Integer> mapExceptionDoms = new HashMap<>();
@@ -86,7 +86,7 @@ public class DominatorTreeExceptionFilter {
 
       Set<Integer> set = mapTreeBranches.get(idom);
       if (set == null) {
-        mapTreeBranches.put(idom, set = new HashSet<>());
+        mapTreeBranches.put(idom, set = new LinkedHashSet<Integer>());
       }
       set.add(key);
     }

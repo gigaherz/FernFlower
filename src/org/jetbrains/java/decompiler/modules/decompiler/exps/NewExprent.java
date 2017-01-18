@@ -27,6 +27,7 @@ import org.jetbrains.java.decompiler.modules.decompiler.ExprProcessor;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.CheckTypesResult;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarVersionPair;
 import org.jetbrains.java.decompiler.struct.StructClass;
+import org.jetbrains.java.decompiler.struct.attr.StructGenericSignatureAttribute;
 import org.jetbrains.java.decompiler.struct.gen.VarType;
 import org.jetbrains.java.decompiler.struct.gen.generics.GenericClassDescriptor;
 import org.jetbrains.java.decompiler.struct.gen.generics.GenericMain;
@@ -34,9 +35,9 @@ import org.jetbrains.java.decompiler.util.InterpreterUtil;
 import org.jetbrains.java.decompiler.util.ListStack;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 public class NewExprent extends Exprent {
   private InvocationExprent constructor;
@@ -48,11 +49,11 @@ public class NewExprent extends Exprent {
   private boolean lambda;
   private boolean enumConst;
 
-  public NewExprent(VarType newType, ListStack<Exprent> stack, int arrayDim, Set<Integer> bytecodeOffsets) {
+  public NewExprent(VarType newType, ListStack<Exprent> stack, int arrayDim, BitSet bytecodeOffsets) {
     this(newType, getDimensions(arrayDim, stack), bytecodeOffsets);
   }
 
-  public NewExprent(VarType newType, List<Exprent> lstDims, Set<Integer> bytecodeOffsets) {
+  public NewExprent(VarType newType, List<Exprent> lstDims, BitSet bytecodeOffsets) {
     super(EXPRENT_NEW);
     this.newType = newType;
     this.lstDims = lstDims;
@@ -224,6 +225,19 @@ public class NewExprent extends Exprent {
           }
         }
 
+        GenericClassDescriptor descriptor = child.getWrapper().getClassStruct().getSignature();
+        if (descriptor != null) {
+          // Anon classes can only be a child to one type. So either the first interface or the super class
+          if (descriptor.superinterfaces.size() > 0) {
+            typename = ExprProcessor.getCastTypeName(descriptor.superinterfaces.get(0));
+          }
+          else {
+            typename = ExprProcessor.getCastTypeName(descriptor.superclass);
+          }
+        }
+
+        buf.prepend("new " + typename);
+
         List<Exprent> lstParameters = constructor.getLstParameters();
 
         int start = enumConst ? 2 : 0;
@@ -330,7 +344,7 @@ public class NewExprent extends Exprent {
 
               if (i == lstParameters.size() - 1 && expr.getExprType() == VarType.VARTYPE_NULL) {
                 ClassNode node = DecompilerContext.getClassProcessor().getMapRootClasses().get(leftType.value);
-                if (node != null && node.namelessConstructorStub) {
+                  if (node != null && (node.namelessConstructorStub || node.type == ClassNode.CLASS_ANONYMOUS || (node.access & CodeConstants.ACC_SYNTHETIC) != 0)) {
                   break;  // skip last parameter of synthetic constructor call
                 }
               }
@@ -448,6 +462,14 @@ public class NewExprent extends Exprent {
            InterpreterUtil.equalObjects(constructor, ne.getConstructor()) &&
            directArrayInit == ne.directArrayInit &&
            InterpreterUtil.equalLists(lstArrayElements, ne.getLstArrayElements());
+  }
+
+  @Override
+  public void getBytecodeRange(BitSet values) {
+    measureBytecode(values, lstArrayElements);
+    measureBytecode(values, lstDims);
+    measureBytecode(values, constructor);
+    measureBytecode(values);
   }
 
   public InvocationExprent getConstructor() {

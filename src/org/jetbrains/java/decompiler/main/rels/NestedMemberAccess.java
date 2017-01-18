@@ -34,6 +34,7 @@ import java.util.*;
 public class NestedMemberAccess {
 
   private enum MethodAccess {NORMAL, FIELD_GET, FIELD_SET, METHOD, FUNCTION}
+  private static final int METHOD_ACCESS_FIELD_INC = 5;
 
   private boolean noSynthFlag;
   private final Map<MethodWrapper, MethodAccess> mapMethodType = new HashMap<>();
@@ -141,6 +142,24 @@ public class NestedMemberAccess {
                     }
                   }
                 }
+                break;
+              case Exprent.EXPRENT_FUNCTION:
+                FunctionExprent func = (FunctionExprent)exprCore;
+                if (func.getLstOperands().size() == 1 && func.getLstOperands().get(0).type == Exprent.EXPRENT_FIELD) {
+                  FieldExprent field = (FieldExprent)func.getLstOperands().get(0);
+                  if ((parcount == 1 && !field.isStatic()) ||
+                      (parcount == 0 && field.isStatic())) {
+                    if (field.getClassname().equals(node.classStruct.qualifiedName)) {
+                      if (func.getFuncType() == FunctionExprent.FUNCTION_IPP ||
+                          func.getFuncType() == FunctionExprent.FUNCTION_PPI ||
+                          func.getFuncType() == FunctionExprent.FUNCTION_IMM ||
+                          func.getFuncType() == FunctionExprent.FUNCTION_MMI) {
+                        type = METHOD_ACCESS_FIELD_INC;
+                      }
+                    }
+                  }
+                }
+                break;
             }
 
             if (type == MethodAccess.METHOD) { // FIXME: check for private flag of the method
@@ -431,6 +450,14 @@ public class NestedMemberAccess {
         }
 
         retexprent = invret;
+        break;
+      case METHOD_ACCESS_FIELD_INC:
+        FunctionExprent func = (FunctionExprent)((ExitExprent)source).getValue().copy();
+        FieldExprent field = (FieldExprent)func.getLstOperands().get(0);
+        if (!field.isStatic()) {
+          field.replaceExprent(field.getInstance(), invexpr.getLstParameters().get(0));
+        }
+        retexprent = func;
     }
 
 

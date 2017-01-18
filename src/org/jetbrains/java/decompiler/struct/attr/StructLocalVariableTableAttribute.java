@@ -15,6 +15,8 @@
  */
 package org.jetbrains.java.decompiler.struct.attr;
 
+import org.jetbrains.java.decompiler.modules.decompiler.vars.LVTVariable;
+import org.jetbrains.java.decompiler.modules.decompiler.vars.LocalVariableTable;
 import org.jetbrains.java.decompiler.struct.consts.ConstantPool;
 import org.jetbrains.java.decompiler.util.DataInputFullStream;
 
@@ -39,36 +41,43 @@ import java.util.stream.Stream;
 public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
   private List<LocalVariable> localVariables = Collections.emptyList();
 
+  private Map<Integer, List<LVTVariable>> EMPTY_LVT = Collections.emptyMap();
+  private LocalVariableTable lvt;
+
   @Override
   public void initContent(DataInputFullStream data, ConstantPool pool) throws IOException {
     int len = data.readUnsignedShort();
+    boolean isLVTT = this.getName().equals(ATTRIBUTE_LOCAL_VARIABLE_TYPE_TABLE);
     if (len > 0) {
-      localVariables = new ArrayList<>(len);
-
+      lvt = new LocalVariableTable(len);
       for (int i = 0; i < len; i++) {
-        int start_pc = data.readUnsignedShort();
-        int length = data.readUnsignedShort();
+        int start = data.readUnsignedShort();
+        int vlen = data.readUnsignedShort();
         int nameIndex = data.readUnsignedShort();
-        int descriptorIndex = data.readUnsignedShort();
+        int descIndex = data.readUnsignedShort(); // either descriptor or signature
         int varIndex = data.readUnsignedShort();
-        localVariables.add(new LocalVariable(start_pc,
-                                             length,
-                                             pool.getPrimitiveConstant(nameIndex).getString(),
-                                             pool.getPrimitiveConstant(descriptorIndex).getString(),
-                                             varIndex));
+        LVTVariable v = new LVTVariable(pool.getPrimitiveConstant(nameIndex).getString(), pool.getPrimitiveConstant(descIndex).getString(),start,start+vlen,varIndex,isLVTT);
+        lvt.addVariable(v);
       }
     }
+  }
+
+  public void addLocalVariableTable(StructLocalVariableTableAttribute attr) {
+    if (lvt == null) {
+      lvt = attr.lvt;
+    }
     else {
-      localVariables = Collections.emptyList();
+      lvt.mergeLVTs(attr.lvt);
+      attr.lvt = lvt;
     }
   }
 
-  public void add(StructLocalVariableTableAttribute attr) {
-    localVariables.addAll(attr.localVariables);
+  public Map<Integer, List<LVTVariable>> getMapVarNames() {
+    return lvt == null ? EMPTY_LVT : lvt.getMapVarNames();
   }
 
-  public String getName(int index, int visibleOffset) {
-    return matchingVars(index, visibleOffset).map(v -> v.name).findFirst().orElse(null);
+  public LocalVariableTable getLVT() {
+    return lvt;
   }
 
   public String getDescriptor(int index, int visibleOffset) {

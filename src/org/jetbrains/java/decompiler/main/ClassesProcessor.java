@@ -31,6 +31,7 @@ import org.jetbrains.java.decompiler.modules.decompiler.vars.VarVersionPair;
 import org.jetbrains.java.decompiler.struct.StructClass;
 import org.jetbrains.java.decompiler.struct.StructContext;
 import org.jetbrains.java.decompiler.struct.StructMethod;
+import org.jetbrains.java.decompiler.struct.attr.StructEnclosingMethodAttribute;
 import org.jetbrains.java.decompiler.struct.attr.StructInnerClassesAttribute;
 import org.jetbrains.java.decompiler.struct.gen.VarType;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
@@ -70,7 +71,33 @@ public class ClassesProcessor {
 
           if (inner != null) {
             for (StructInnerClassesAttribute.Entry entry : inner.getEntries()) {
+              Object[] arr = new Object[4]; // arr[0] not used
               String innerName = entry.innerName;
+
+              // nested class type
+              if (entry.innerName != null) {
+                if (entry.simpleName == null) {
+                  arr[2] = ClassNode.CLASS_ANONYMOUS;
+                }
+                else {
+                  StructClass in = context.getClass(entry.innerName);
+                  if (in == null) { // A referenced library that was not added to the context, make assumptions
+                    arr[2] = ClassNode.CLASS_MEMBER;
+                  }
+                  else {
+                    StructEnclosingMethodAttribute attr = (StructEnclosingMethodAttribute)in.getAttributes().getWithKey("EnclosingMethod");
+                    if (attr != null && attr.getMethodName() != null) {
+                      arr[2] = ClassNode.CLASS_LOCAL;
+                    }
+                    else {
+                      arr[2] = ClassNode.CLASS_MEMBER;
+                    }
+                  }
+                }
+              }
+              else { // This should never happen as inner_class and outer_class are NOT optional, make assumptions
+                arr[2] = ClassNode.CLASS_MEMBER;
+              }
 
               // original simple name
               String simpleName = entry.simpleName;
@@ -90,6 +117,9 @@ public class ClassesProcessor {
               rec.simpleName = simpleName;
               rec.type = entry.outerNameIdx != 0 ? ClassNode.CLASS_MEMBER : entry.simpleNameIdx != 0 ? ClassNode.CLASS_LOCAL : ClassNode.CLASS_ANONYMOUS;
               rec.accessFlags = entry.accessFlags;
+
+              // original access flags
+              arr[3] = entry.accessFlags;
 
               // enclosing class
               String enclClassName;
@@ -222,6 +252,7 @@ public class ClassesProcessor {
                 stack.add(nestedClass);
               }
             }
+            Collections.sort(superNode.nested);
           }
         }
       }
@@ -322,6 +353,9 @@ public class ClassesProcessor {
   private static void destroyWrappers(ClassNode node) {
     node.wrapper = null;
     node.classStruct.releaseResources();
+    for (StructMethod m : node.classStruct.getMethods()) {
+        m.unloadRenamer();
+    }
 
     for (ClassNode nd : node.nested) {
       destroyWrappers(nd);
@@ -333,7 +367,7 @@ public class ClassesProcessor {
   }
 
 
-  public static class ClassNode {
+  public static class ClassNode implements Comparable<ClassNode> {
     public static final int CLASS_ROOT = 0;
     public static final int CLASS_MEMBER = 1;
     public static final int CLASS_ANONYMOUS = 2;
@@ -430,6 +464,12 @@ public class ClassesProcessor {
 
       public boolean is_method_reference;
       public boolean is_content_method_static;
+    }
+
+    @Override
+    public int compareTo(ClassNode o)
+    {
+        return this.classStruct.qualifiedName.compareTo(o.classStruct.qualifiedName);
     }
   }
 }

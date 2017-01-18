@@ -69,4 +69,51 @@ public class EnumProcessor {
       }
     }
   }
+
+  // FIXME: move to a util class (see also InitializerProcessor)
+  private static Statement findFirstData(Statement stat) {
+    if (stat == null) {
+      return null;
+    }
+    if (stat.getExprents() != null) {
+      return stat;
+    }
+    else {
+      if (stat.isLabeled()) {
+        return null;
+      }
+
+      switch (stat.type) {
+        case Statement.TYPE_SEQUENCE:
+        case Statement.TYPE_IF:
+        case Statement.TYPE_ROOT:
+        case Statement.TYPE_SWITCH:
+        case Statement.TYPE_SYNCRONIZED:
+          return findFirstData(stat.getFirst());
+        default:
+          return null;
+      }
+    }
+  }
+
+  // FIXME: move to util class (see also InitializerProcessor)
+  private static boolean isInvocationSuperConstructor(InvocationExprent inv, MethodWrapper meth, ClassWrapper wrapper) {
+
+    if (inv.getFunctype() == InvocationExprent.TYP_INIT) {
+      if (inv.getInstance().type == Exprent.EXPRENT_VAR) {
+        VarExprent instvar = (VarExprent)inv.getInstance();
+        VarVersionPair varpaar = new VarVersionPair(instvar);
+
+        String classname = meth.varproc.getThisVars().get(varpaar);
+
+        if (classname != null) { // any this instance. TODO: Restrict to current class?
+          if (!wrapper.getClassStruct().qualifiedName.equals(inv.getClassname())) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
 }

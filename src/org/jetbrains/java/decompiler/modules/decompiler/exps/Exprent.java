@@ -15,6 +15,15 @@
  */
 package org.jetbrains.java.decompiler.modules.decompiler.exps;
 
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.main.TextBuffer;
 import org.jetbrains.java.decompiler.main.collectors.BytecodeMappingTracer;
@@ -30,7 +39,7 @@ import org.jetbrains.java.decompiler.struct.match.MatchNode.RuleValue;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class Exprent implements IMatchable {
+public abstract class Exprent implements IMatchable {
   public static final int MULTIPLE_USES = 1;
   public static final int SIDE_EFFECTS_FREE = 2;
   public static final int BOTH_FLAGS = 3;
@@ -52,7 +61,7 @@ public class Exprent implements IMatchable {
 
   public final int type;
   public final int id;
-  public Set<Integer> bytecode = null;  // offsets of bytecode instructions decompiled to this exprent
+  public BitSet bytecode = null;  // offsets of bytecode instructions decompiled to this exprent
 
   public Exprent(int type) {
     this.type = type;
@@ -65,6 +74,10 @@ public class Exprent implements IMatchable {
 
   public VarType getExprType() {
     return VarType.VARTYPE_VOID;
+  }
+
+  public VarType getInferredExprType(VarType upperBound) {
+    return getExprType();
   }
 
   public int getExprentUse() {
@@ -125,17 +138,32 @@ public class Exprent implements IMatchable {
 
   public void replaceExprent(Exprent oldExpr, Exprent newExpr) { }
 
-  public void addBytecodeOffsets(Collection<Integer> bytecodeOffsets) {
-    if (bytecodeOffsets != null && !bytecodeOffsets.isEmpty()) {
+  public void addBytecodeOffsets(BitSet bytecodeOffsets) {
+    if (bytecodeOffsets != null) {
       if (bytecode == null) {
-        bytecode = new HashSet<>(bytecodeOffsets);
+        bytecode = new BitSet();
       }
-      else {
-        bytecode.addAll(bytecodeOffsets);
-      }
+      bytecode.or(bytecodeOffsets);
     }
   }
-  
+
+  public abstract void getBytecodeRange(BitSet values);
+
+  protected void measureBytecode(BitSet values) {
+    if (bytecode != null)
+      values.or(bytecode);
+  }
+  protected static void measureBytecode(BitSet values, Exprent exprent) {
+    if (exprent != null)
+      exprent.getBytecodeRange(values);
+  }
+  protected static void measureBytecode(BitSet values, List<Exprent> list) {
+    if (list != null && !list.isEmpty()) {
+      for (Exprent e : list)
+        e.getBytecodeRange(values);
+    }
+  }
+
   // *****************************************************************************
   // IMatchable implementation
   // *****************************************************************************
@@ -171,14 +199,20 @@ public class Exprent implements IMatchable {
       return false;
     }
 
-    for (Entry<MatchProperties, RuleValue> rule : matchNode.getRules().entrySet()) {
-      MatchProperties key = rule.getKey();
-      if (key == MatchProperties.EXPRENT_TYPE && this.type != ((Integer)rule.getValue().value).intValue()) {
-        return false;
+    for(Entry<MatchProperties, RuleValue> rule : matchNode.getRules().entrySet()) {
+      switch(rule.getKey()) {
+      case EXPRENT_TYPE:
+        if(this.type != ((Integer)rule.getValue().value).intValue()) {
+          return false;
+        }
+        break;
+      case EXPRENT_RET:
+        if(!engine.checkAndSetVariableValue((String)rule.getValue().value, this)) {
+          return false;
+        }
+        break;
       }
-      if (key == MatchProperties.EXPRENT_RET && !engine.checkAndSetVariableValue((String)rule.getValue().value, this)) {
-        return false;
-      }
+
     }
 
     return true;
@@ -187,5 +221,37 @@ public class Exprent implements IMatchable {
   @Override
   public String toString() {
     return toJava(0, BytecodeMappingTracer.DUMMY).toString();
+  }
+
+  public static List<Exprent> sortIndexed(List<Exprent> lst) {
+    List<Exprent> ret = new ArrayList<Exprent>();
+    List<VarExprent> defs = new ArrayList<VarExprent>();
+
+    Comparator<VarExprent> comp = new Comparator<VarExprent>() {
+      public int compare(VarExprent o1, VarExprent o2) {
+        return o1.getIndex() - o2.getIndex();
+      }
+    };
+
+    for (Exprent exp : lst) {
+      boolean isDef = exp instanceof VarExprent && ((VarExprent)exp).isDefinition();
+      if (!isDef) {
+        if (defs.size() > 0) {
+          Collections.sort(defs, comp);
+          ret.addAll(defs);
+          defs.clear();
+        }
+        ret.add(exp);
+      }
+      else {
+        defs.add((VarExprent)exp);
+      }
+    }
+
+    if (defs.size() > 0) {
+      Collections.sort(defs, comp);
+      ret.addAll(defs);
+    }
+    return ret;
   }
 }
