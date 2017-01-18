@@ -25,7 +25,7 @@ import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 import org.jetbrains.java.decompiler.main.rels.MethodWrapper;
 import org.jetbrains.java.decompiler.modules.decompiler.ExprProcessor;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.CheckTypesResult;
-import org.jetbrains.java.decompiler.modules.decompiler.vars.LVTVariable;
+import org.jetbrains.java.decompiler.modules.decompiler.vars.LocalVariable;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarProcessor;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarTypeProcessor;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarVersionPair;
@@ -60,7 +60,7 @@ public class VarExprent extends Exprent {
   private int version = 0;
   private boolean classDef = false;
   private boolean stack = false;
-  private LVTVariable lvt = null;
+  private LocalVariable lvt = null;
 
   public VarExprent(int index, VarType varType, VarProcessor processor) {
     this(index, varType, processor, -1);
@@ -192,7 +192,7 @@ public class VarExprent extends Exprent {
               if (signature != null) {
                 GenericFieldDescriptor descriptor = GenericMain.parseFieldSignature(signature);
                 if (descriptor != null) {
-                  buffer.append(GenericMain.getGenericCastTypeName(descriptor.type));
+                  buffer.append(GenericMain.getGenericCastTypeName((GenericType)descriptor.type));
                   return;
                 }
               }
@@ -323,14 +323,14 @@ public class VarExprent extends Exprent {
     return true;
   }
 
-  public void setLVT(LVTVariable lvt) {
+  public void setLVT(LocalVariable lvt) {
     this.lvt = lvt;
     if (processor != null && lvt != null) {
       processor.setVarType(new VarVersionPair(this), lvt.getVarType());
     }
   }
 
-  public LVTVariable getLVT() {
+  public LocalVariable getLVT() {
     return this.lvt;
   }
 

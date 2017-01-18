@@ -347,7 +347,7 @@ public class ExprProcessor implements CodeConstants {
         case opc_fload:
         case opc_dload:
         case opc_aload:
-          VarExprent varExprent = new VarExprent(instr.getOperand(0), vartypes[instr.opcode - opc_iload], varProcessor);
+          VarExprent varExprent = new VarExprent(instr.getOperand(0), varTypes[instr.opcode - opc_iload], varProcessor);
           varProcessor.findLVT(varExprent, bytecode_offset+instr.length());
           pushEx(stack, exprlist, varExprent);
           break;
@@ -379,7 +379,7 @@ public class ExprProcessor implements CodeConstants {
         case opc_astore:
           Exprent top = stack.pop();
           int varindex = instr.getOperand(0);
-          varExprent = new VarExprent(varindex, vartypes[instr.opcode - opc_istore], varProcessor);
+          varExprent = new VarExprent(varindex, varTypes[instr.opcode - opc_istore], varProcessor);
           varProcessor.findLVT(varExprent, bytecode_offset+instr.length());
           AssignmentExprent assign = new AssignmentExprent(varExprent, top, bytecode_offsets);
           exprlist.add(assign);

@@ -31,6 +31,7 @@ import org.jetbrains.java.decompiler.struct.attr.StructGenericSignatureAttribute
 import org.jetbrains.java.decompiler.struct.gen.VarType;
 import org.jetbrains.java.decompiler.struct.gen.generics.GenericClassDescriptor;
 import org.jetbrains.java.decompiler.struct.gen.generics.GenericMain;
+import org.jetbrains.java.decompiler.struct.gen.generics.GenericType;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
 import org.jetbrains.java.decompiler.util.ListStack;
 
@@ -189,14 +190,14 @@ public class NewExprent extends Exprent {
         GenericClassDescriptor descriptor = ClassWriter.getGenericClassDescriptor(child.classStruct);
         if (descriptor != null) {
           if (descriptor.superinterfaces.isEmpty()) {
-            buf.append(GenericMain.getGenericCastTypeName(descriptor.superclass));
+            buf.append(GenericMain.getGenericCastTypeName((GenericType)descriptor.superclass));
           }
           else {
             if (descriptor.superinterfaces.size() > 1 && !lambda) {
               DecompilerContext.getLogger().writeMessage("Inconsistent anonymous class signature: " + child.classStruct.qualifiedName,
                                                          IFernflowerLogger.Severity.WARN);
             }
-            buf.append(GenericMain.getGenericCastTypeName(descriptor.superinterfaces.get(0)));
+            buf.append(GenericMain.getGenericCastTypeName((GenericType)descriptor.superinterfaces.get(0)));
           }
         }
         else {
@@ -226,6 +227,7 @@ public class NewExprent extends Exprent {
         }
 
         GenericClassDescriptor descriptor = child.getWrapper().getClassStruct().getSignature();
+        String typename = ExprProcessor.getCastTypeName(child.anonymousClassType);
         if (descriptor != null) {
           // Anon classes can only be a child to one type. So either the first interface or the super class
           if (descriptor.superinterfaces.size() > 0) {

@@ -219,7 +219,7 @@ public class VarDefinitionHelper {
         var.setDefinition(true);
 
         if (varproc.getLVT() != null) {
-          LVTVariable lvt = findLVT(index.intValue(), stat);
+          LocalVariable lvt = findLVT(index.intValue(), stat);
           if (lvt != null) {
             var.setLVT(lvt);
           }
@@ -238,17 +238,17 @@ public class VarDefinitionHelper {
   // private methods
   // *****************************************************************************
 
-  private LVTVariable findLVT(int index, Statement stat) {
+  private LocalVariable findLVT(int index, Statement stat) {
     if (stat.getExprents() == null) {
       for (Object obj : stat.getSequentialObjects()) {
         if (obj instanceof Statement) {
-          LVTVariable lvt = findLVT(index, (Statement)obj);
+          LocalVariable lvt = findLVT(index, (Statement)obj);
           if (lvt != null) {
             return lvt;
           }
         }
         else if (obj instanceof Exprent) {
-          LVTVariable lvt = findLVT(index, (Exprent)obj);
+          LocalVariable lvt = findLVT(index, (Exprent)obj);
           if (lvt != null) {
             return lvt;
           }
@@ -257,7 +257,7 @@ public class VarDefinitionHelper {
     }
     else {
       for (Exprent exp : stat.getExprents()) {
-        LVTVariable lvt = findLVT(index, exp);
+        LocalVariable lvt = findLVT(index, exp);
         if (lvt != null) {
           return lvt;
         }
@@ -266,9 +266,9 @@ public class VarDefinitionHelper {
     return null;
   }
 
-  private LVTVariable findLVT(int index, Exprent exp) {
+  private LocalVariable findLVT(int index, Exprent exp) {
     for (Exprent e : exp.getAllExprents(false)) {
-      LVTVariable lvt = findLVT(index, e);
+      LocalVariable lvt = findLVT(index, e);
       if (lvt != null) {
         return lvt;
       }
@@ -438,7 +438,7 @@ public class VarDefinitionHelper {
 
     for (VarType var : md.params) {
       if (varproc.getLVT() != null) {
-        List<LVTVariable> vars = varproc.getLVT().getCandidates(index);
+        List<LocalVariable> vars = varproc.getLVT().getCandidates(index);
         if (vars != null) {
           types.put(new VarVersionPair(index, 0), new VarInfo(null,null));
         }
@@ -482,7 +482,7 @@ public class VarDefinitionHelper {
       }
     });
 
-    Map<VarVersionPair, LVTVariable> lvts = new HashMap<VarVersionPair, LVTVariable>();
+    Map<VarVersionPair, LocalVariable> lvts = new HashMap<VarVersionPair, LocalVariable>();
 
     for (Entry<VarVersionPair, VarInfo> e : types.entrySet()) {
       VarVersionPair idx = e.getKey();
@@ -490,7 +490,7 @@ public class VarDefinitionHelper {
       if (idx.var == 0 && !mt.hasModifier(CodeConstants.ACC_STATIC)) {
         continue;
       }
-      LVTVariable lvt = e.getValue().lvt;
+      LocalVariable lvt = e.getValue().lvt;
       if (renames!=null) {
         varproc.setVarName(idx, renames.get(idx));
       }
@@ -551,9 +551,9 @@ public class VarDefinitionHelper {
   }
 
   private static class VarInfo {
-    LVTVariable lvt;
+    LocalVariable lvt;
     String cast;
-    private VarInfo(LVTVariable lvt, VarType type) {
+    private VarInfo(LocalVariable lvt, VarType type) {
       if (lvt != null && lvt.getSig() != null) {
         cast = ExprProcessor.getCastTypeName(GenericType.parse(lvt.getSig()),false);
       }
@@ -573,7 +573,7 @@ public class VarDefinitionHelper {
     }
   }
 
-  private void applyTypes(Statement stat, Map<VarVersionPair, LVTVariable> types) {
+  private void applyTypes(Statement stat, Map<VarVersionPair, LocalVariable> types) {
     if (stat == null || types.size() == 0) {
       return;
     }
@@ -599,7 +599,7 @@ public class VarDefinitionHelper {
     }
   }
 
-  private void applyTypes(Exprent exprent, Map<VarVersionPair, LVTVariable> types) {
+  private void applyTypes(Exprent exprent, Map<VarVersionPair, LocalVariable> types) {
     if (exprent == null) {
       return;
     }
@@ -609,7 +609,7 @@ public class VarDefinitionHelper {
     for (Exprent expr : lst) {
       if (expr.type == Exprent.EXPRENT_VAR) {
         VarExprent var = (VarExprent)expr;
-        LVTVariable lvt = types.get(new VarVersionPair(var));
+        LocalVariable lvt = types.get(new VarVersionPair(var));
         if (lvt != null) {
           var.setLVT(lvt);
         } else {

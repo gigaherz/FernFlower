@@ -32,7 +32,7 @@ import org.jetbrains.java.decompiler.modules.decompiler.stats.DoStatement;
 import org.jetbrains.java.decompiler.modules.decompiler.stats.RootStatement;
 import org.jetbrains.java.decompiler.modules.decompiler.stats.SequenceStatement;
 import org.jetbrains.java.decompiler.modules.decompiler.stats.Statement;
-import org.jetbrains.java.decompiler.modules.decompiler.vars.LVTVariable;
+import org.jetbrains.java.decompiler.modules.decompiler.vars.LocalVariable;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarTypeProcessor;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.VarVersionPair;
 import org.jetbrains.java.decompiler.struct.StructClass;
@@ -557,7 +557,7 @@ public class NestedClassProcessor {
         Map<VarVersionPair, String> mapNewNames = new HashMap<>();  // local var names
         Map<VarVersionPair, VarType> mapNewTypes = new HashMap<>();  // local var types
         // local var table entries
-        HashMap<VarVersionPair, LVTVariable> mapNewLVTs = new HashMap<>();
+        HashMap<VarVersionPair, LocalVariable> mapNewLVTs = new HashMap<>();
 
         final Map<Integer, VarVersionPair> mapParamsToNewVars = new HashMap<>();
         if (method.signatureFields != null) {
@@ -572,12 +572,12 @@ public class NestedClassProcessor {
 
               String varName = null;
               VarType varType = null;
-              LVTVariable varlvt = null;
+              LocalVariable varlvt = null;
 
               if (child.type != ClassNode.CLASS_MEMBER) {
                 varName = enclosingMethod.varproc.getVarName(pair);
                 varType = enclosingMethod.varproc.getVarType(pair);
-                varlvt = encmeth.varproc.getVarLVT(paar);
+                varlvt = enclosingMethod.varproc.getVarLVT(pair);
 
                 enclosingMethod.varproc.setVarFinal(pair, VarTypeProcessor.VAR_EXPLICIT_FINAL);
               }
@@ -591,14 +591,14 @@ public class NestedClassProcessor {
                   varName = parent.simpleName + ".this";
                 }
                 if (varlvt != null) {
-                  varlvt = varlvt.rename(varname);
+                  varlvt = varlvt.rename(varName);
                 }
                 method.varproc.getThisVars().put(newVar, parent.classStruct.qualifiedName);
               }
 
               mapNewNames.put(newVar, varName);
               mapNewTypes.put(newVar, varType);
-              mapNewLVTs.put(newvar, varlvt);
+              mapNewLVTs.put(newVar, varlvt);
             }
 
             varIndex += md.params[index++].stackSize;
@@ -614,14 +614,14 @@ public class NestedClassProcessor {
 
             String varName = null;
             VarType varType = null;
-            LVTVariable varlvt = null;
+            LocalVariable varlvt = null;
 
             if (classNode.type != ClassNode.CLASS_MEMBER) {
               MethodWrapper enclosing_method = classNode.parent.getWrapper().getMethods().getWithKey(classNode.enclosingMethod);
 
               varName = enclosing_method.varproc.getVarName(entry.getValue());
               varType = enclosing_method.varproc.getVarType(entry.getValue());
-              varlvt  = enclosing_method.varproc.getVarLVT(entr.getValue());
+              varlvt  = enclosing_method.varproc.getVarLVT(entry.getValue());
 
               enclosing_method.varproc.setVarFinal(entry.getValue(), VarTypeProcessor.VAR_EXPLICIT_FINAL);
             }
@@ -635,14 +635,14 @@ public class NestedClassProcessor {
                 varName = classNode.parent.simpleName + ".this";
               }
               if (varlvt != null) {
-                varlvt = varlvt.rename(varname);
+                varlvt = varlvt.rename(varName);
               }
               method.varproc.getThisVars().put(newVar, classNode.parent.classStruct.qualifiedName);
             }
 
             mapNewNames.put(newVar, varName);
             mapNewTypes.put(newVar, varType);
-            mapNewLVTs.put(newvar, varlvt);
+            mapNewLVTs.put(newVar, varlvt);
 
             // hide synthetic field
             if (classNode == child) { // fields higher up the chain were already handled with their classes
@@ -661,18 +661,18 @@ public class NestedClassProcessor {
         for (Entry<VarVersionPair, String> entry : mapNewNames.entrySet()) {
           VarVersionPair pair = entry.getKey();
           VarType type = mapNewTypes.get(pair);
-          LVTVariable varlvt = mapNewLVTs.get(varpaar);
+          LocalVariable varlvt = mapNewLVTs.get(pair);
 
           method.varproc.setVarName(pair, entry.getValue());
           if (type != null) {
             method.varproc.setVarType(pair, type);
           }
           if (varlvt != null) {
-            meth.varproc.setVarLVT(varpaar, varlvt);
+            method.varproc.setVarLVT(pair, varlvt);
           }
         }
 
-        DirectGraph graph = meth.getOrBuildGraph();
+        DirectGraph graph = method.getOrBuildGraph();
 
         iterateExprents(graph, new ExprentIteratorWithReplace() {
           public Exprent processExprent(Exprent exprent) {
@@ -711,7 +711,7 @@ public class NestedClassProcessor {
                 VarVersionPair newVar = mapParamsToNewVars.get(varIndex);
                 method.varproc.getExternalVars().add(newVar);
                 VarExprent ret = new VarExprent(newVar.var, method.varproc.getVarType(newVar), method.varproc);
-                LVTVariable lvt = method.varproc.getVarLVT(newVar);
+                LocalVariable lvt = method.varproc.getVarLVT(newVar);
                 if (lvt != null) {
                   ret.setLVT(lvt);
                 }
@@ -727,7 +727,7 @@ public class NestedClassProcessor {
                 VarVersionPair newVar = mapFieldsToNewVars.get(key);
                 method.varproc.getExternalVars().add(newVar);
                 VarExprent ret = new VarExprent(newVar.var, method.varproc.getVarType(newVar), method.varproc);
-                LVTVariable lvt = meth.varproc.getVarLVT(newVar);
+                LocalVariable lvt = method.varproc.getVarLVT(newVar);
                 if (lvt != null) {
                   ret.setLVT(lvt);
                 }

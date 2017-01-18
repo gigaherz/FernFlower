@@ -22,10 +22,7 @@ import org.jetbrains.java.decompiler.struct.consts.PrimitiveConstant;
 import org.jetbrains.java.decompiler.struct.gen.MethodDescriptor;
 import org.jetbrains.java.decompiler.struct.gen.VarType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ConcatenationHelper {
 
@@ -138,7 +135,7 @@ public class ConcatenationHelper {
     return createConcatExprent(lstOperands, expr.bytecode);
   }
 
-  private static Exprent createConcatExprent(List<Exprent> lstOperands, Set<Integer> bytecode) {
+  private static Exprent createConcatExprent(List<Exprent> lstOperands, BitSet bytecode) {
     // build exprent to return
     Exprent func = lstOperands.get(0);
 

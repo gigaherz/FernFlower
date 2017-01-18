@@ -22,7 +22,6 @@ import org.jetbrains.java.decompiler.modules.decompiler.stats.Statement;
 import org.jetbrains.java.decompiler.struct.StructMethod;
 import org.jetbrains.java.decompiler.struct.gen.MethodDescriptor;
 import org.jetbrains.java.decompiler.struct.gen.VarType;
-import org.jetbrains.java.decompiler.util.TextUtil;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -31,7 +30,7 @@ public class VarProcessor {
   private final StructMethod method;
   private final MethodDescriptor methodDescriptor;
   private Map<VarVersionPair, String> mapVarNames = new HashMap<>();
-  private Map<VarVersionPair, LVTVariable> mapVarLVTs = new HashMap<VarVersionPair, LVTVariable>();
+  private Map<VarVersionPair, LocalVariable> mapVarLVTs = new HashMap<VarVersionPair, LocalVariable>();
   private VarVersionsProcessor varVersions;
   private final Map<VarVersionPair, String> thisVars = new HashMap<>();
   private final Set<VarVersionPair> externalVars = new HashSet<>();
@@ -60,7 +59,7 @@ public class VarProcessor {
     new VarDefinitionHelper(root, method, this).setVarDefinitions();
   }
 
-  public void setDebugVarNames(Map<Integer, List<LVTVariable>> mapDebugVarNames) {
+  public void setDebugVarNames(Map<Integer, List<LocalVariable>> mapDebugVarNames) {
     if (varVersions == null) {
       return;
     }
@@ -95,7 +94,7 @@ public class VarProcessor {
       if (key != null) {
         if (indexedPairs.containsKey(key.var)) {
           int veridx = indexedPairs.get(key.var).headSet(key).size();
-          List<LVTVariable> list = mapDebugVarNames.get(key.var);
+          List<LocalVariable> list = mapDebugVarNames.get(key.var);
           if (list != null && list.size()>veridx) {
               name = list.get(veridx).name;
               lvtName = true;
@@ -174,7 +173,7 @@ public class VarProcessor {
   }
 
   public void findLVT(VarExprent varExprent, int bytecodeOffset) {
-    LVTVariable var = this.lvt == null ? null : lvt.find(varExprent.getIndex(), bytecodeOffset);
+    LocalVariable var = this.lvt == null ? null : lvt.find(varExprent.getIndex(), bytecodeOffset);
     if (var != null) {
       varExprent.setLVT(var);
     }
@@ -197,11 +196,11 @@ public class VarProcessor {
     return varVersions;
   }
 
-  public void setVarLVT(VarVersionPair var, LVTVariable lvt) {
+  public void setVarLVT(VarVersionPair var, LocalVariable lvt) {
     mapVarLVTs.put(var, lvt);
   }
 
-  public LVTVariable getVarLVT(VarVersionPair var) {
+  public LocalVariable getVarLVT(VarVersionPair var) {
     return mapVarLVTs.get(var);
   }
 }

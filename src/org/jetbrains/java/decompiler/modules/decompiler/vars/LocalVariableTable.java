@@ -9,50 +9,50 @@ import java.util.Set;
 import org.jetbrains.java.decompiler.modules.decompiler.stats.Statement;
 
 public class LocalVariableTable {
-  private Map<StartEndPair, Set<LVTVariable>> endpoints;
-  private ArrayList<LVTVariable> allLVT;
-  private Map<Integer, List<LVTVariable>> mapLVT;
+  private Map<StartEndPair, Set<LocalVariable>> endpoints;
+  private ArrayList<LocalVariable> allLVT;
+  private Map<Integer, List<LocalVariable>> mapLVT;
 
   public LocalVariableTable(int len) {
-    endpoints = new HashMap<StartEndPair,Set<LVTVariable>>(len);
-    allLVT = new ArrayList<LVTVariable>(len);
+    endpoints = new HashMap<StartEndPair,Set<LocalVariable>>(len);
+    allLVT = new ArrayList<LocalVariable>(len);
   }
 
-  public void addVariable(LVTVariable v) {
+  public void addVariable(LocalVariable v) {
     allLVT.add(v);
     v.addTo(endpoints);
   }
 
   public void mergeLVTs(LocalVariableTable otherLVT) {
-   for (LVTVariable other : otherLVT.allLVT) {
+   for (LocalVariable other : otherLVT.allLVT) {
       int idx = allLVT.indexOf(other);
       if (idx < 0) {
         allLVT.add(other);
       }
       else {
-        LVTVariable mine = allLVT.get(idx);
+        LocalVariable mine = allLVT.get(idx);
         mine.merge(other);
       }
     }
     mapLVT = null; // Invalidate the cache and rebuild it.
   }
 
-  public LVTVariable find(int index, Integer bytecodeOffset) {
+  public LocalVariable find(int index, Integer bytecodeOffset) {
     //System.out.println(indent + stat.getClass().getSimpleName() + " (" + start +", " + end + ")");
 
-    Map<Integer, List<LVTVariable>> map = getMapVarNames();
+    Map<Integer, List<LocalVariable>> map = getMapVarNames();
     if (!map.containsKey(index)) {
       return null;
     }
-    for (LVTVariable lvt : map.get(index)) {
-      if (lvt.start == bytecodeOffset) {
+    for (LocalVariable lvt : map.get(index)) {
+      if (lvt.start_pc == bytecodeOffset) {
         return lvt;
       }
     }
     return null;
   }
 
-  public Map<Integer, List<LVTVariable>> getMapVarNames() {
+  public Map<Integer, List<LocalVariable>> getMapVarNames() {
     if (mapLVT == null)
       buildNameMap();
     return mapLVT;
@@ -60,35 +60,35 @@ public class LocalVariableTable {
 
   private void buildNameMap() {
     Map<Integer, Integer> versions = new HashMap<Integer, Integer>();
-    mapLVT = new HashMap<Integer,List<LVTVariable>>();
-    for (LVTVariable lvt : allLVT) {
+    mapLVT = new HashMap<Integer,List<LocalVariable>>();
+    for (LocalVariable lvt : allLVT) {
       Integer idx = versions.get(lvt.index);
       if (idx == null)
         idx = 1;
       else
         idx++;
       versions.put(lvt.index, idx);
-      List<LVTVariable> lvtList = mapLVT.get(lvt.index);
+      List<LocalVariable> lvtList = mapLVT.get(lvt.index);
       if (lvtList == null) {
-        lvtList = new ArrayList<LVTVariable>();
+        lvtList = new ArrayList<LocalVariable>();
         mapLVT.put(lvt.index, lvtList);
       }
       lvtList.add(lvt);
     }
   }
 
-  public List<LVTVariable> getCandidates(int index) {
+  public List<LocalVariable> getCandidates(int index) {
     return getMapVarNames().get(index);
   }
 
-  public Map<Integer, LVTVariable> getVars(Statement statement) {
-    Map<Integer, LVTVariable> ret = new HashMap<Integer, LVTVariable>();
+  public Map<Integer, LocalVariable> getVars(Statement statement) {
+    Map<Integer, LocalVariable> ret = new HashMap<Integer, LocalVariable>();
     if (statement == null) {
       return ret;
     }
     StartEndPair sepair = statement.getStartEndRange();
     if (endpoints.containsKey(sepair)) {
-      for (LVTVariable lvt : endpoints.get(sepair)) {
+      for (LocalVariable lvt : endpoints.get(sepair)) {
         ret.put(lvt.index, lvt);
       }
     }

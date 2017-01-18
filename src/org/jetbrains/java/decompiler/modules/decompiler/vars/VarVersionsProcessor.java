@@ -297,11 +297,11 @@ public class VarVersionsProcessor {
     });
 
     if (previousVersionsProcessor != null) {
-      Map<Integer, Integer> oldIndices = previousVersionsProcessor.getMapOriginalVarIndices();
+      Map<Integer, VarVersionPair> oldIndices = previousVersionsProcessor.getMapOriginalVarIndices();
       this.mapOriginalVarIndices = new HashMap<>(mapOriginalVarIndices.size());
-      for (Entry<Integer, Integer> entry : mapOriginalVarIndices.entrySet()) {
-        Integer value = entry.getValue();
-        Integer oldValue = oldIndices.get(value);
+      for (Entry<Integer, VarVersionPair> entry : mapOriginalVarIndices.entrySet()) {
+        VarVersionPair value = entry.getValue();
+        VarVersionPair oldValue = oldIndices.get(value);
         value = oldValue != null ? oldValue : value;
         this.mapOriginalVarIndices.put(entry.getKey(), value);
       }

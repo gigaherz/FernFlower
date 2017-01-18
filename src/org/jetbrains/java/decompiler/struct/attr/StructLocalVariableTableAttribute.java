@@ -15,7 +15,7 @@
  */
 package org.jetbrains.java.decompiler.struct.attr;
 
-import org.jetbrains.java.decompiler.modules.decompiler.vars.LVTVariable;
+import org.jetbrains.java.decompiler.modules.decompiler.vars.LocalVariable;
 import org.jetbrains.java.decompiler.modules.decompiler.vars.LocalVariableTable;
 import org.jetbrains.java.decompiler.struct.consts.ConstantPool;
 import org.jetbrains.java.decompiler.util.DataInputFullStream;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
   private List<LocalVariable> localVariables = Collections.emptyList();
 
-  private Map<Integer, List<LVTVariable>> EMPTY_LVT = Collections.emptyMap();
+  private Map<Integer, List<LocalVariable>> EMPTY_LVT = Collections.emptyMap();
   private LocalVariableTable lvt;
 
   @Override
@@ -49,30 +49,36 @@ public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
     int len = data.readUnsignedShort();
     boolean isLVTT = this.getName().equals(ATTRIBUTE_LOCAL_VARIABLE_TYPE_TABLE);
     if (len > 0) {
-      lvt = new LocalVariableTable(len);
+      localVariables = new ArrayList<>(len);
+
       for (int i = 0; i < len; i++) {
-        int start = data.readUnsignedShort();
+        int start_pc = data.readUnsignedShort();
         int vlen = data.readUnsignedShort();
         int nameIndex = data.readUnsignedShort();
         int descIndex = data.readUnsignedShort(); // either descriptor or signature
         int varIndex = data.readUnsignedShort();
-        LVTVariable v = new LVTVariable(pool.getPrimitiveConstant(nameIndex).getString(), pool.getPrimitiveConstant(descIndex).getString(),start,start+vlen,varIndex,isLVTT);
-        lvt.addVariable(v);
+        localVariables.add(new LocalVariable(pool.getPrimitiveConstant(nameIndex).getString(),
+                                             pool.getPrimitiveConstant(descIndex).getString(),
+                                             start_pc,
+                                             start_pc+vlen,
+                                             varIndex,
+                                             isLVTT));
       }
     }
-  }
-
-  public void addLocalVariableTable(StructLocalVariableTableAttribute attr) {
-    if (lvt == null) {
-      lvt = attr.lvt;
-    }
     else {
-      lvt.mergeLVTs(attr.lvt);
-      attr.lvt = lvt;
+      localVariables = Collections.emptyList();
     }
   }
 
-  public Map<Integer, List<LVTVariable>> getMapVarNames() {
+  public void add(StructLocalVariableTableAttribute attr) {
+    localVariables.addAll(attr.localVariables);
+  }
+
+  public String getName(int index, int visibleOffset) {
+    return matchingVars(index, visibleOffset).map(v -> v.name).findFirst().orElse(null);
+  }
+
+  public Map<Integer, List<LocalVariable>> getMapVarNames() {
     return lvt == null ? EMPTY_LVT : lvt.getMapVarNames();
   }
 
@@ -81,7 +87,7 @@ public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
   }
 
   public String getDescriptor(int index, int visibleOffset) {
-    return matchingVars(index, visibleOffset).map(v -> v.descriptor).findFirst().orElse(null);
+    return matchingVars(index, visibleOffset).map(v -> v.getDesc()).findFirst().orElse(null);
   }
 
   private Stream<LocalVariable> matchingVars(int index, int visibleOffset) {
@@ -93,23 +99,7 @@ public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
     return localVariables.stream().anyMatch(v -> v.name == name);
   }
 
-  public Map<Integer, String> getMapParamNames() {
-    return localVariables.stream().filter(v -> v.start_pc == 0).collect(Collectors.toMap(v -> v.index, v -> v.name, (n1, n2) -> n2));
-  }
-
-  private static class LocalVariable {
-    final int start_pc;
-    final int length;
-    final String name;
-    final String descriptor;
-    final int index;
-
-    private LocalVariable(int start_pc, int length, String name, String descriptor, int index) {
-      this.start_pc = start_pc;
-      this.length = length;
-      this.name = name;
-      this.descriptor = descriptor;
-      this.index = index;
-    }
+  public Map<Integer, List<LocalVariable>> getMapParamNames() {
+    return localVariables.stream().filter(v -> v.start_pc == 0).collect(Collectors.groupingBy(v -> v.index));
   }
 }

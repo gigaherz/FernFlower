@@ -137,10 +137,10 @@ public class InitializerProcessor {
             if (fExpr.isStatic() && fExpr.getClassname().equals(cl.qualifiedName) &&
                 cl.hasField(fExpr.getName(), fExpr.getDescriptor().descriptorString)) {
 
-              String keyField = InterpreterUtil.makeUniqueKey(fexpr.getName(), fexpr.getDescriptor().descriptorString);
-              if (isExprentIndependent(asexpr.getRight(), meth, cl, whitelist, cl.getFields().getIndexByKey(keyField))) {
+              String keyField = InterpreterUtil.makeUniqueKey(fExpr.getName(), fExpr.getDescriptor().descriptorString);
+              if (isExprentIndependent(assignExpr.getRight(), method, cl, whitelist, cl.getFields().getIndexByKey(keyField))) {
                 if (!wrapper.getStaticFieldInitializers().containsKey(keyField)) {
-                  wrapper.getStaticFieldInitializers().addWithKey(asexpr.getRight(), keyField);
+                  wrapper.getStaticFieldInitializers().addWithKey(assignExpr.getRight(), keyField);
                   whitelist.add(keyField);
                   itr.remove();
                 }
@@ -207,8 +207,8 @@ public class InitializerProcessor {
             if (!fExpr.isStatic() && fExpr.getClassname().equals(cl.qualifiedName) &&
                 cl.hasField(fExpr.getName(), fExpr.getDescriptor().descriptorString)) { // check for the physical existence of the field. Could be defined in a superclass.
 
-              String fieldKey = InterpreterUtil.makeUniqueKey(fexpr.getName(), fexpr.getDescriptor().descriptorString);
-              if (isExprentIndependent(asexpr.getRight(), lstMethWrappers.get(i), cl, whitelist, cl.getFields().getIndexByKey(fieldKey))) {
+              String fieldKey = InterpreterUtil.makeUniqueKey(fExpr.getName(), fExpr.getDescriptor().descriptorString);
+              if (isExprentIndependent(assignExpr.getRight(), lstMethodWrappers.get(i), cl, whitelist, cl.getFields().getIndexByKey(fieldKey))) {
                 if (fieldWithDescr == null) {
                   fieldWithDescr = fieldKey;
                   value = assignExpr.getRight();
@@ -243,7 +243,7 @@ public class InitializerProcessor {
     }
   }
 
-  private static boolean isExprentIndependent(Exprent exprent, MethodWrapper meth, StructClass cl, Set<String> whitelist, int fidx) {
+  private static boolean isExprentIndependent(Exprent exprent, MethodWrapper method, StructClass cl, Set<String> whitelist, int fidx) {
 
     List<Exprent> lst = exprent.getAllExprents(true);
     lst.add(exprent);

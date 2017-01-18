@@ -332,8 +332,6 @@ public class ClassWriter {
       buffer.append("class ");
     }
 
-    GenericClassDescriptor descriptor = cl.getSignature();
-
     buffer.append(node.simpleName);
 
     GenericClassDescriptor descriptor = getGenericClassDescriptor(cl);

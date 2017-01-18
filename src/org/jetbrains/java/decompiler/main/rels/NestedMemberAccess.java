@@ -33,8 +33,7 @@ import java.util.*;
 
 public class NestedMemberAccess {
 
-  private enum MethodAccess {NORMAL, FIELD_GET, FIELD_SET, METHOD, FUNCTION}
-  private static final int METHOD_ACCESS_FIELD_INC = 5;
+  private enum MethodAccess {NORMAL, FIELD_GET, FIELD_SET, METHOD, FUNCTION, FIELD_INC}
 
   private boolean noSynthFlag;
   private final Map<MethodWrapper, MethodAccess> mapMethodType = new HashMap<>();
@@ -122,6 +121,21 @@ public class NestedMemberAccess {
                     type = MethodAccess.FUNCTION;
                   }
                 }
+                if (functionExprent.getLstOperands().size() == 1 &&
+                    functionExprent.getLstOperands().get(0).type == Exprent.EXPRENT_FIELD) {
+                  FieldExprent field = (FieldExprent)functionExprent.getLstOperands().get(0);
+                  if ((parcount == 1 && !field.isStatic()) ||
+                          (parcount == 0 && field.isStatic())) {
+                    if (field.getClassname().equals(node.classStruct.qualifiedName)) {
+                      if (functionExprent.getFuncType() == FunctionExprent.FUNCTION_IPP ||
+                              functionExprent.getFuncType() == FunctionExprent.FUNCTION_PPI ||
+                              functionExprent.getFuncType() == FunctionExprent.FUNCTION_IMM ||
+                              functionExprent.getFuncType() == FunctionExprent.FUNCTION_MMI) {
+                        type = MethodAccess.FIELD_INC;
+                      }
+                    }
+                  }
+                }
                 break;
               case Exprent.EXPRENT_INVOCATION:
                 type = MethodAccess.METHOD;
@@ -138,23 +152,6 @@ public class NestedMemberAccess {
                         if (((VarExprent)asexpr.getRight()).getIndex() == parcount - 1) {
                           type = MethodAccess.FIELD_SET;
                         }
-                      }
-                    }
-                  }
-                }
-                break;
-              case Exprent.EXPRENT_FUNCTION:
-                FunctionExprent func = (FunctionExprent)exprCore;
-                if (func.getLstOperands().size() == 1 && func.getLstOperands().get(0).type == Exprent.EXPRENT_FIELD) {
-                  FieldExprent field = (FieldExprent)func.getLstOperands().get(0);
-                  if ((parcount == 1 && !field.isStatic()) ||
-                      (parcount == 0 && field.isStatic())) {
-                    if (field.getClassname().equals(node.classStruct.qualifiedName)) {
-                      if (func.getFuncType() == FunctionExprent.FUNCTION_IPP ||
-                          func.getFuncType() == FunctionExprent.FUNCTION_PPI ||
-                          func.getFuncType() == FunctionExprent.FUNCTION_IMM ||
-                          func.getFuncType() == FunctionExprent.FUNCTION_MMI) {
-                        type = METHOD_ACCESS_FIELD_INC;
                       }
                     }
                   }
@@ -451,7 +448,7 @@ public class NestedMemberAccess {
 
         retexprent = invret;
         break;
-      case METHOD_ACCESS_FIELD_INC:
+      case FIELD_INC:
         FunctionExprent func = (FunctionExprent)((ExitExprent)source).getValue().copy();
         FieldExprent field = (FieldExprent)func.getLstOperands().get(0);
         if (!field.isStatic()) {
