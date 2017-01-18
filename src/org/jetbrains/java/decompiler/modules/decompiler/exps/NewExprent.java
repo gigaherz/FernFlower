@@ -226,20 +226,6 @@ public class NewExprent extends Exprent {
           }
         }
 
-        GenericClassDescriptor descriptor = child.getWrapper().getClassStruct().getSignature();
-        String typename = ExprProcessor.getCastTypeName(child.anonymousClassType);
-        if (descriptor != null) {
-          // Anon classes can only be a child to one type. So either the first interface or the super class
-          if (descriptor.superinterfaces.size() > 0) {
-            typename = ExprProcessor.getCastTypeName(descriptor.superinterfaces.get(0));
-          }
-          else {
-            typename = ExprProcessor.getCastTypeName(descriptor.superclass);
-          }
-        }
-
-        buf.prepend("new " + typename);
-
         List<Exprent> lstParameters = constructor.getLstParameters();
 
         int start = enumConst ? 2 : 0;
