@@ -27,12 +27,12 @@ public class LocalVariable implements Comparable<LocalVariable> {
   public final int length;
   final String descriptor;
 
-  public LocalVariable(String name, String desc, int start, int end, int index, boolean isLVTT) {
+  public LocalVariable(int start, int length, String name, String desc, int index, boolean isLVTT) {
     this.name = name;
     this.descriptor = desc;
     this.start_pc = start;
-    this.end = end;
-    this.length = end-start;
+    this.end = start+length;
+    this.length = length;
     this.index = index;
     this.isLVTT = isLVTT;
   }
@@ -91,7 +91,7 @@ public class LocalVariable implements Comparable<LocalVariable> {
   }
 
   public LocalVariable rename(String newName) {
-    LocalVariable lvtVariable = new LocalVariable(newName, descriptor, start_pc, end, index, isLVTT);
+    LocalVariable lvtVariable = new LocalVariable(start_pc, length, newName, descriptor, index, isLVTT);
     lvtVariable.sig = this.sig;
     return lvtVariable;
   }

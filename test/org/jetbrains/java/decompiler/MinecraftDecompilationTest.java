@@ -76,7 +76,7 @@ public class MinecraftDecompilationTest {
     decompiler.decompileContext();
 
     File unpacked = new File(fixture.getTempDir(), "unpacked");
-    unpack(new File(fixture.getTargetDir(), "bulk.jar"), unpacked);
+    unpack(new File(fixture.getTargetDir(), MC_JAR), unpacked);
 
 //    compareDirectories(new File(fixture.getTestDataDir(), "bulk"), unpacked);
   }

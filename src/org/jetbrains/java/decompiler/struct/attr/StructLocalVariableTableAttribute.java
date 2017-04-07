@@ -49,20 +49,23 @@ public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
     int len = data.readUnsignedShort();
     boolean isLVTT = this.getName().equals(ATTRIBUTE_LOCAL_VARIABLE_TYPE_TABLE);
     if (len > 0) {
+      lvt = new LocalVariableTable(len);
       localVariables = new ArrayList<>(len);
 
       for (int i = 0; i < len; i++) {
         int start_pc = data.readUnsignedShort();
-        int vlen = data.readUnsignedShort();
+        int length = data.readUnsignedShort();
         int nameIndex = data.readUnsignedShort();
-        int descIndex = data.readUnsignedShort(); // either descriptor or signature
+        int descriptorIndex = data.readUnsignedShort();
         int varIndex = data.readUnsignedShort();
-        localVariables.add(new LocalVariable(pool.getPrimitiveConstant(nameIndex).getString(),
-                                             pool.getPrimitiveConstant(descIndex).getString(),
-                                             start_pc,
-                                             start_pc+vlen,
-                                             varIndex,
-                                             isLVTT));
+        LocalVariable v = new LocalVariable(start_pc,
+                length,
+                pool.getPrimitiveConstant(nameIndex).getString(),
+                pool.getPrimitiveConstant(descriptorIndex).getString(),
+                varIndex,
+                isLVTT);
+        localVariables.add(v); // REDUNDANT!
+        lvt.addVariable(v);
       }
     }
     else {
@@ -76,10 +79,6 @@ public class StructLocalVariableTableAttribute extends StructGeneralAttribute {
 
   public String getName(int index, int visibleOffset) {
     return matchingVars(index, visibleOffset).map(v -> v.name).findFirst().orElse(null);
-  }
-
-  public Map<Integer, List<LocalVariable>> getMapVarNames() {
-    return lvt == null ? EMPTY_LVT : lvt.getMapVarNames();
   }
 
   public LocalVariableTable getLVT() {

@@ -124,9 +124,11 @@ public class InitializerProcessor {
     StructClass cl = wrapper.getClassStruct();
     Set<String> whitelist = new HashSet<String>();
 
-    Statement firstdata = findFirstData(root);
-    if (firstdata != null) {
-      Iterator<Exprent> itr = firstdata.getExprents().iterator();
+    Statement firstData = Statements.findFirstData(root);
+    if (firstData != null) {
+      boolean inlineInitializers = cl.hasModifier(CodeConstants.ACC_INTERFACE) || cl.hasModifier(CodeConstants.ACC_ENUM);
+
+      Iterator<Exprent> itr = firstData.getExprents().iterator();
       while (itr.hasNext()) {
         Exprent exprent = itr.next();
 
@@ -137,8 +139,9 @@ public class InitializerProcessor {
             if (fExpr.isStatic() && fExpr.getClassname().equals(cl.qualifiedName) &&
                 cl.hasField(fExpr.getName(), fExpr.getDescriptor().descriptorString)) {
 
+              // interfaces fields should always be initialized inline
               String keyField = InterpreterUtil.makeUniqueKey(fExpr.getName(), fExpr.getDescriptor().descriptorString);
-              if (isExprentIndependent(assignExpr.getRight(), method, cl, whitelist, cl.getFields().getIndexByKey(keyField))) {
+              if (inlineInitializers || isExprentIndependent(assignExpr.getRight(), method, cl, whitelist, cl.getFields().getIndexByKey(keyField))) {
                 if (!wrapper.getStaticFieldInitializers().containsKey(keyField)) {
                   wrapper.getStaticFieldInitializers().addWithKey(assignExpr.getRight(), keyField);
                   whitelist.add(keyField);
@@ -183,7 +186,7 @@ public class InitializerProcessor {
       return;
     }
 
-    Set<String> whitelist = new HashSet<String>();
+    Set<String> whitelist = new HashSet<>();
 
     while (true) {
       String fieldWithDescr = null;

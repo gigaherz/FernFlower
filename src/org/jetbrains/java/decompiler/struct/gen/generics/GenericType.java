@@ -71,7 +71,7 @@ public class GenericType extends VarType {
         case 'L':
           type = CodeConstants.TYPE_OBJECT;
           signature = signature.substring(index + 1, signature.length() - 1);
-            String cl = getNextClassSignature(signature);
+          String cl = getNextClassSignature(signature);
 
           if (cl.length() == signature.length()) {
             int argStart = cl.indexOf('<');
@@ -86,30 +86,30 @@ public class GenericType extends VarType {
           else {
             StringBuilder name_buff = new StringBuilder();
             while (signature.length() > 0) {
-            String name = cl;
-            String args = null;
+              String name = cl;
+              String args = null;
 
               int argStart = cl.indexOf('<');
-            if (argStart >= 0) {
-              name = cl.substring(0, argStart);
-              args = cl.substring(argStart + 1, cl.length() - 1);
-            }
+              if (argStart >= 0) {
+                name = cl.substring(0, argStart);
+                args = cl.substring(argStart + 1, cl.length() - 1);
+              }
 
               if (name_buff.length() > 0) {
                 name_buff.append('$');
-            }
+              }
               name_buff.append(name);
 
               value = name_buff.toString();
               params = args == null ? null : parseArgumentsList(args);
 
               if (cl.length() == signature.length()) {
-              break;
-            }
+                break;
+              }
               else {
                 if (parent == null && params == null) {
                   parent = GenericType.parse("L" + value + ";");
-          }
+                }
                 else {
                   parent = new GenericType(CodeConstants.TYPE_OBJECT, 0, value, parent, params, wildcard);
                 }
@@ -131,7 +131,7 @@ public class GenericType extends VarType {
 
     if (type == CodeConstants.TYPE_GENVAR) {
       return new GenericType(type, arrayDim, value, null, null, wildcard);
-  }
+    }
     else if (type == CodeConstants.TYPE_OBJECT) {
       if (parent == null && params == null && wildcard == WILDCARD_NO) {
         return new VarType(type, arrayDim, value);
@@ -278,7 +278,7 @@ public class GenericType extends VarType {
     String clsName = null;
     if (parent == null) {
       clsName = DecompilerContext.getImportCollector().getShortName(value.replace('/', '.'));
-}
+    }
     else if (parent.isGeneric()) {
       clsName = ((GenericType)parent).getCastName() + "." + value.substring(parent.value.length() + 1);
     }
